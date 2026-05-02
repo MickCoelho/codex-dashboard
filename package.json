@@ -1,0 +1,13 @@
+{
+  "name": "codex-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "generate": "python3 scripts/codex-dashboard.py",
+    "serve": "serve . --listen 3000",
+    "dev": "yarn generate && yarn serve"
+  },
+  "devDependencies": {
+    "serve": "^14.2.4"
+  }
+}
