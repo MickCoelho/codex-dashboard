@@ -4,10 +4,7 @@
   "private": true,
   "scripts": {
     "generate": "python3 scripts/codex-dashboard.py",
-    "serve": "serve . --listen 3000",
+    "serve": "node server.js",
     "dev": "yarn generate && yarn serve"
-  },
-  "devDependencies": {
-    "serve": "^14.2.4"
   }
 }

@@ -555,6 +555,11 @@ const toast      = document.getElementById('refresh-toast');
 btnRefresh.addEventListener('click', async () => {
   btnRefresh.classList.add('loading');
   try {
+    // Ask the server to re-run the Python script first
+    const regen = await fetch('/api/refresh', { method: 'POST' });
+    if (!regen.ok) throw new Error('regeneration failed');
+
+    // Then reload the freshly written data.json
     const res  = await fetch('./data.json?t=' + Date.now());
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
