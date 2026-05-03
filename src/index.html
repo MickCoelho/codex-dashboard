@@ -213,11 +213,11 @@
 
   <div class="filter-row">
     <span class="filter-lbl">Show</span>
-    <button class="pill" data-hours="24">24h</button>
+    <button class="pill active" data-hours="24">24h</button>
     <button class="pill" data-hours="-1">WTD</button>
     <button class="pill" data-hours="168">7d</button>
     <button class="pill" data-hours="720">1m</button>
-    <button class="pill active" data-hours="0">All</button>
+    <button class="pill" data-hours="0">All</button>
   </div>
 
   <div class="stats-bar">
@@ -281,7 +281,7 @@
 
 <script>
 let ALL_SESSIONS = [];
-let activeHours  = 0;   // 0 = all
+let activeHours  = 24;  // default filter
 let sortCol      = 'num';
 let sortAsc      = true;
 const openSet    = new Set();
