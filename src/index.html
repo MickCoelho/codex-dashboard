@@ -247,7 +247,7 @@
         <th class="nosort"></th>
         <th data-col="num">#</th>
         <th data-col="started">Started</th>
-        <th data-col="tokens">In-window tokens</th>
+        <th data-col="tokens">CLI total tokens</th>
         <th data-col="credits">~Credits</th>
         <th data-col="input">Input</th>
         <th data-col="cache">Cache%</th>
@@ -266,7 +266,7 @@
 
 <footer class="site-footer">
   <div>gpt-5.5: 125/12.5/750 &nbsp;·&nbsp; gpt-5.4: 62.5/6.25/375 &nbsp;·&nbsp; gpt-5.4-mini: 18.75/1.875/113 &nbsp;·&nbsp; gpt-5.3-codex: 43.75/4.375/350 &nbsp;·&nbsp; gpt-5.2: 43.75/4.375/350 &nbsp;&nbsp;(cr/1M in/cached/out)</div>
-  <div style="margin-top:5px;color:#2a2a48;">⚠ Credits shown are a floor estimate. Fast mode ("About 1.5x faster, with increased plan usage") is not recorded in local session data and cannot be detected — actual billing may be higher if Fast mode was used.</div>
+  <div style="margin-top:5px;color:#2a2a48;">⚠ Credits include reasoning tokens (billed as output). Fast mode ("About 1.5x faster, with increased plan usage") is not recorded in local session data — actual billing may be higher if Fast mode was used.</div>
 </footer>
 
 <!-- refresh toast -->
@@ -408,9 +408,15 @@ function buildDetail(s) {
       <div class="dmeta"><span class="dmeta-lbl">Started</span><span class="dmeta-val" style="font-size:11px">${s.startedTs}</span></div>
       <div class="dmeta"><span class="dmeta-lbl">Model</span><span class="dmeta-val">${s.model}</span></div>
       <div class="dmeta"><span class="dmeta-lbl">Turns</span><span class="dmeta-val cyan">${s.perTurn.length}</span></div>
-      <div class="dmeta"><span class="dmeta-lbl">In-window</span><span class="dmeta-val cyan">${fmt(s.inWindow)}</span></div>
+      <div class="dmeta"><span class="dmeta-lbl">CLI total</span><span class="dmeta-val cyan">${fmt(s.cliTotal)}</span></div>
+      <div class="dmeta"><span class="dmeta-lbl">Input (all)</span><span class="dmeta-val">${fmt(s.input)}</span></div>
       <div class="dmeta"><span class="dmeta-lbl">Cached</span><span class="dmeta-val green">${fmt(s.cachedTok)} (${s.cache}%)</span></div>
       <div class="dmeta"><span class="dmeta-lbl">Credits</span><span class="dmeta-val amber">${fmtC(s.credits)}</span></div>
+    </div>
+    <div class="detail-meta-row" style="margin-top:8px">
+      <div class="dmeta"><span class="dmeta-lbl">First msg (run 1)</span><span class="dmeta-val" style="font-size:10.5px">${s.prompt || '—'}${s.firstRunMessageRole ? ` [${s.firstRunMessageRole}]` : ''}</span></div>
+      <div class="dmeta"><span class="dmeta-lbl">Latest user msg</span><span class="dmeta-val" style="font-size:10.5px">${s.latestPrompt || '—'}</span></div>
+      <div class="dmeta"><span class="dmeta-lbl">First agent msg</span><span class="dmeta-val" style="font-size:10.5px">${s.firstAgentPrompt || '—'}</span></div>
     </div>
     <div class="detail-grid">
       <div>
@@ -429,7 +435,7 @@ function buildDetail(s) {
 
 // ── render ───────────────────────────────────────────────────────────────
 function renderTable(sessions) {
-  const maxTok = Math.max(...sessions.map(s => s.inWindow), 1);
+  const maxTok = Math.max(...sessions.map(s => s.cliTotal ?? s.inWindow), 1);
   const tbody  = document.getElementById('tbody');
   tbody.innerHTML = '';
 
@@ -441,13 +447,15 @@ function renderTable(sessions) {
   }
 
   const sorted = [...sessions].sort((a,b) => {
-    const va = a[sortCol], vb = b[sortCol];
+    const va = sortCol === 'cliTotal' ? (a.cliTotal ?? a.inWindow ?? 0) : a[sortCol];
+    const vb = sortCol === 'cliTotal' ? (b.cliTotal ?? b.inWindow ?? 0) : b[sortCol];
     if (typeof va === 'string') return sortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
     return sortAsc ? va - vb : vb - va;
   });
 
   sorted.forEach((s, idx) => {
-    const barPct = Math.max(1, (s.inWindow / maxTok) * 100);
+    const mainTokens = s.cliTotal ?? s.inWindow;
+    const barPct = Math.max(1, (mainTokens / maxTok) * 100);
     const cwd    = s.cwd.replace(/\/Users\/[^/]+/, '~');
 
     const tr = document.createElement('tr');
@@ -459,7 +467,7 @@ function renderTable(sessions) {
       <td class="c-num">${idx+1}</td>
       <td class="c-started">${s.started}</td>
       <td class="token-cell">
-        <div class="token-val">${fmtShort(s.inWindow)}</div>
+        <div class="token-val">${fmtShort(mainTokens)}</div>
         <div class="t-bar-track"><div class="t-bar-fill" data-pct="${barPct}" style="width:0"></div></div>
       </td>
       <td class="c-credits" style="position:relative">
@@ -522,7 +530,7 @@ function applyFilter() {
 
 // ── sort ─────────────────────────────────────────────────────────────────
 const COL_MAP = {
-  num:'num', started:'started', tokens:'inWindow', credits:'credits',
+  num:'num', started:'started', tokens:'cliTotal', credits:'credits',
   input:'input', cache:'cache', output:'output', reasoning:'reasoning', tools:'tools'
 };
 document.querySelectorAll('thead th[data-col]').forEach(th => {
